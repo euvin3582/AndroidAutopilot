@@ -57,7 +57,7 @@ echo "Current: $CURRENT_VERSION, Incremented: $NEW_VERSION, Min: $MIN_VERSION_CO
 if [ $NEW_VERSION -le $MIN_VERSION_CODE ]; then
   NEW_VERSION=$((MIN_VERSION_CODE + 1))
 fi
-sed -i "s/versionCode $CURRENT_VERSION/versionCode $NEW_VERSION/" $GRADLE_FILE
+sed -i '' "s/versionCode $CURRENT_VERSION/versionCode $NEW_VERSION/" $GRADLE_FILE
 echo "Version code: $NEW_VERSION"
 cd ..
 
