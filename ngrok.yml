@@ -1,0 +1,9 @@
+version: "2"
+authtoke: 1P1IbeBLKxpdmgudF6Ie2P9DWt1_7hneJdaszQyB1JkbjT9Fj
+tunnels:
+  ios:
+    addr: 3002
+    proto: http
+  android:
+    addr: 3003
+    proto: http
