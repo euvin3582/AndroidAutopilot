@@ -21,16 +21,11 @@ KEY_PASSWORD="${ANDROID_KEY_PASSWORD}"
 SERVICE_ACCOUNT_JSON="${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON}"
 MIN_VERSION_CODE="${MIN_VERSION_CODE:-1}"
 
-echo "📦 Cloning/updating repository..."
-if [ -d "$REPO_DIR" ]; then
-  cd "$REPO_DIR"
-  git fetch origin
-  git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)
-  git clean -fd
-  cd ..
-else
-  git clone "$REPO_URL"
-fi
+echo "📦 Cloning fresh repository..."
+mkdir -p build
+cd build
+rm -rf "$REPO_DIR"
+git clone "$REPO_URL"
 
 cd "$REPO_DIR"
 
@@ -48,6 +43,14 @@ cat .env
 echo "🔨 Prebuilding Android..."
 EXPO_NO_GIT_STATUS=1 npx expo prebuild --platform android
 
+echo "📝 Creating polyfills file..."
+mkdir -p app
+cat > app/polyfills.ts << 'EOF'
+// Polyfills for React Native
+import 'react-native-get-random-values';
+import 'react-native-url-polyfill/auto';
+EOF
+
 echo "🔢 Incrementing version code..."
 cd android
 GRADLE_FILE="app/build.gradle"
@@ -63,11 +66,25 @@ cd ..
 
 echo "🔨 Building Android AAB..."
 cd android
+
+# Stop any existing Gradle daemons
+./gradlew --stop || true
+
+# Clean build
+./gradlew clean --no-daemon
+
+# Build with optimized settings
 ./gradlew bundleRelease \
+  --no-daemon \
+  --no-build-cache \
+  --no-configuration-cache \
+  --max-workers=2 \
+  --stacktrace \
+  -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m" \
   -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
   -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
   -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-  -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+  -Pandroid.injected.signing.key.password="$KEY_PASSWORD" 2>&1 | tee build.log
 
 echo "☁️ Uploading to Google Play Console..."
 # Install bundletool if not present

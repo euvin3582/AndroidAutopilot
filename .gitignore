@@ -5,3 +5,4 @@ node_modules/
 *.p12
 service-account.json
 YOUR_REPO/
+build/
